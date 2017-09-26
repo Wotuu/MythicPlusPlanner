@@ -1,5 +1,6 @@
 var mapObj;
 var _currentMapName;
+var _currentFloor;
 
 function initMap() {
     mapObj = new google.maps.Map(document.getElementById('map'), {
@@ -18,7 +19,7 @@ function initMap() {
                 return null;
             }
 
-            var result = 'img/Maps/Tiles/' + _currentMapName + '/1/' + zoom + '/' + normalizedCoord.x + '_' + normalizedCoord.y + '.png';
+            var result = _currentMapName + '/' + _currentFloor + '/' + zoom + '/' + normalizedCoord.x + '_' + normalizedCoord.y + '.png';
             console.log(normalizedCoord, result);
             return result;
         },
@@ -57,10 +58,24 @@ function getNormalizedCoord(coord, zoom) {
     return {x: x, y: y};
 }
 
-function setCurrentMapName(name){
+function setCurrentMapName(name, floor) {
+    console.log(name, floor);
+    var oldMapName = _currentMapName;
+    var oldFloor = _currentFloor;
     _currentMapName = name;
-    if( typeof mapObj !== "undefined" ) {
-        console.log("refresh");
-        google.maps.event.trigger(mapObj, 'resize');
+    _currentFloor = floor;
+    if (typeof mapObj !== "undefined") {
+        // Thank you https://stackoverflow.com/questions/25687831/refreshing-google-maps-api-v3-layers
+        var tiles = $("#map").find("img");
+        for (var i = 0; i < tiles.length; i++) {
+            var src = $(tiles[i]).attr("src");
+
+            // If not from google
+            if (src.indexOf("gstatic") < 0) {
+                // Manually switch the tiles, refresh them
+                var new_src = src.replace(oldMapName + "/" + oldFloor, _currentMapName + "/" + _currentFloor).split("?ts")[0] + '?ts=' + (new Date()).getTime();
+                $(tiles[i]).attr("src", new_src);
+            }
+        }
     }
 }
